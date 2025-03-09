@@ -1,6 +1,6 @@
 ﻿#运行:python app.py
 #常时运行，一直监听
-from flask import Flask,render_template,url_for,request,make_response
+from flask import Flask,render_template,url_for,request,make_response,jsonify 
 import requests
 from Pix_Chan import PixAI
 import time
@@ -16,12 +16,13 @@ app=Flask(__name__)
 timeout_limit=300
 pixai_items=[]
 
-def init_pixai_items():
+def init_pixai_items(sleep:int=0):
     for account in accounts:
         pixai_item = {
             'email':account["email"],
             'password':account["password"],
         }
+        time.sleep(sleep)
         login(pixai_item)
         pixai_items.append(pixai_item)
 def login(pixai_item):
@@ -120,6 +121,10 @@ def generate():
     #获取当前时间戳
     #timestamp = time.time()
     if(request.method=='POST'):
+        # json_data = request.get_json()
+        # print("request json:")
+        # print(json_data)
+        # return jsonify(json_data), 200
         #print(type(request.data))
         #print(request.data)
         if not request.is_json:
@@ -177,5 +182,5 @@ def generate():
 
 if  __name__=='__main__':
     pass
-    init_pixai_items()
+    init_pixai_items(sleep=4)
     app.run(host='0.0.0.0',port=5000,debug=False)
