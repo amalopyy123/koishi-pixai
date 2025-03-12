@@ -83,39 +83,7 @@ def image_to_base64(image_url):
     except Exception as e:
         print(f"Failed to convert to base64：{e}")
     return None
-def test():
-    init_pixai_items()
-    pix_item=lock_availabe_pix_item()
-    print(pix_item['email'])
-    if(pix_item):
-        parameters={
-        "prompts": "Komeiji Koishi",
-        "extra": {},
-        "priority": 1000,
-        "width": 512,
-        "height": 768,
-        "modelId": "1631191708426527449",
-        "negativePrompts": "lowres, bad anatomy, bad hands, text, error, missing finger, extra digits, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry",
-        "samplingSteps": 20,
-        "samplingMethod": "Euler a",
-        "cfgScale": 6,
-        "seed": "",
-        "clipSkip": 2,
-        "controlNets": [],
-        "lightning": False
-    }
-        query_id=pix_item['pixai'].generate_image("",parameters=parameters)
-        while True:
-            media_ids=pix_item['pixai'].get_task_by_id(query_id)
-            if media_ids:
-                break
-            time.sleep(10)
-        for media_id in media_ids:
-            #https://images-ng.pixai.art/images/orig/313b290d-005f-4de6-8225-76571053192d
-            print(pix_item['pixai'].get_media(media_id))
-        free_pix_item(pix_item)
-#run()
-#exit()
+
 @app.route('/generate',methods=['GET','POST'])
 def generate():
     #获取当前时间戳
@@ -157,24 +125,29 @@ def generate():
     #     "lightning": False
     # }
         parameters=json_data['parameters']
-        query_id=pix_item['pixai'].generate_image("",parameters=parameters)
-        global timeout_limit
-        time_current=0
-        while True:
-            media_ids=pix_item['pixai'].get_task_by_id(query_id)
-            time_current+=15
-            if media_ids or time_current>timeout_limit:
-                break
-            time.sleep(15)
-        free_pix_item(pix_item)
-        if time_current>timeout_limit:
-            return jsonify({"error": "Timeout"}), 400
-        if(not len(media_ids)):
-            return jsonify({"error": "Can not retrive media ids"}), 400
-        img_url=pix_item['pixai'].get_media(media_ids[0])
-        base64_data=image_to_base64(img_url)
-        resp = make_response(base64_data, 200)
-        return resp
+        try:
+            query_id=pix_item['pixai'].generate_image("",parameters=parameters)
+            global timeout_limit
+            time_current=0
+            while True:
+                media_ids=pix_item['pixai'].get_task_by_id(query_id)
+                time_current+=15
+                if media_ids or time_current>timeout_limit:
+                    break
+                time.sleep(15)       
+            if time_current>timeout_limit:
+                return jsonify({"error": "Timeout"}), 400
+            if(not len(media_ids)):
+                return jsonify({"error": "Can not retrive media ids"}), 400
+            free_pix_item(pix_item)
+            img_url=pix_item['pixai'].get_media(media_ids[0])
+            base64_data=image_to_base64(img_url)
+            resp = make_response(base64_data, 200)
+            return resp
+        except Exception as e:
+            free_pix_item(pix_item)
+            print(e)
+            return make_response(e, 400)
     else:
         resp = make_response("Invalid Method", 400)
         resp.headers['X-Something'] = 'Invalid Invalid Method'
@@ -184,3 +157,37 @@ if  __name__=='__main__':
     pass
     init_pixai_items(sleep=4)
     app.run(host='0.0.0.0',port=5000,debug=False)
+
+def test():
+    init_pixai_items()
+    pix_item=lock_availabe_pix_item()
+    print(pix_item['email'])
+    if(pix_item):
+        parameters={
+        "prompts": "Komeiji Koishi",
+        "extra": {},
+        "priority": 1000,
+        "width": 512,
+        "height": 768,
+        "modelId": "1631191708426527449",
+        "negativePrompts": "lowres, bad anatomy, bad hands, text, error, missing finger, extra digits, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry",
+        "samplingSteps": 20,
+        "samplingMethod": "Euler a",
+        "cfgScale": 6,
+        "seed": "",
+        "clipSkip": 2,
+        "controlNets": [],
+        "lightning": False
+    }
+        query_id=pix_item['pixai'].generate_image("",parameters=parameters)
+        while True:
+            media_ids=pix_item['pixai'].get_task_by_id(query_id)
+            if media_ids:
+                break
+            time.sleep(10)
+        for media_id in media_ids:
+            #https://images-ng.pixai.art/images/orig/313b290d-005f-4de6-8225-76571053192d
+            print(pix_item['pixai'].get_media(media_id))
+        free_pix_item(pix_item)
+#run()
+#exit()
